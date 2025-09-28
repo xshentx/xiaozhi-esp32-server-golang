@@ -558,6 +558,7 @@ func (s *ChatSession) OnListenStart() error {
 			text, err := s.clientState.RetireAsrResult(ctx)
 			if err != nil {
 				log.Errorf("处理asr结果失败: %v", err)
+				s.Close()
 				return
 			}
 
@@ -575,12 +576,14 @@ func (s *ChatSession) OnListenStart() error {
 				err = s.serverTransport.SendAsrResult(text)
 				if err != nil {
 					log.Errorf("发送asr消息失败: %v", err)
+					s.Close()
 					return
 				}
 
 				err = s.AddAsrResultToQueue(text)
 				if err != nil {
 					log.Errorf("开始对话失败: %v", err)
+					s.Close()
 					return
 				}
 				return
@@ -599,6 +602,7 @@ func (s *ChatSession) OnListenStart() error {
 						log.Warnf("ASR识别结果为空，尝试重启ASR识别, diff ts: %s", diffTs)
 						if restartErr := s.asrManager.RestartAsrRecognition(ctx); restartErr != nil {
 							log.Errorf("重启ASR识别失败: %v", restartErr)
+							s.Close()
 							return
 						}
 						continue

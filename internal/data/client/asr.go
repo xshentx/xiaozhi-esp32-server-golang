@@ -37,7 +37,10 @@ func (a *Asr) RetireAsrResult(ctx context.Context) (string, error) {
 		case <-ctx.Done():
 			return "", fmt.Errorf("RetireAsrResult ctx Done")
 		case result, ok := <-a.AsrResultChannel:
-			log.Debugf("asr result: %s, ok: %+v, isFinal: %+v", result.Text, ok, result.IsFinal)
+			log.Debugf("asr result: %s, ok: %+v, isFinal: %+v, error: %+v", result.Text, ok, result.IsFinal, result.Error)
+			if result.Error != nil {
+				return "", result.Error
+			}
 			a.AsrResult.WriteString(result.Text)
 			if a.AutoEnd || result.IsFinal {
 				text := a.AsrResult.String()

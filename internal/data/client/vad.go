@@ -41,6 +41,25 @@ func (v *Vad) Init(provider string, config map[string]interface{}) error {
 	return nil
 }
 
+func (v *Vad) ResetVad() error {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	if v.VadProvider != nil {
+		v.VadProvider.Reset()
+		return nil
+	}
+	return fmt.Errorf("vad provider is nil")
+}
+
+func (v *Vad) IsVADExt(pcmData []float32, sampleRate int, frameSize int) (bool, error) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	if v.VadProvider != nil {
+		return v.VadProvider.IsVADExt(pcmData, sampleRate, frameSize)
+	}
+	return false, nil
+}
+
 func (v *Vad) Reset() error {
 	v.lock.Lock()
 	defer v.lock.Unlock()

@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	mcp_manager "xiaozhi-esp32-server-golang/internal/domain/mcp"
 	log "xiaozhi-esp32-server-golang/logger"
 
-	"github.com/scroot/music-sd/pkg/netease"
-	"github.com/scroot/music-sd/pkg/qq"
+	//"github.com/scroot/music-sd/pkg/netease"
+	//"github.com/scroot/music-sd/pkg/qq"
 	"github.com/spf13/viper"
 )
 
@@ -313,7 +314,7 @@ func RegisterChatMCPTools() {
 	InitChatLocalMCPTools()
 }
 
-/* // 播放音乐
+// 播放音乐
 func GetMusicAudioData(ctx context.Context, musicParams *PlayMusicParams) ([]byte, string, error) {
 	musicName := musicParams.Name
 	//welcome := musicParams.Welcome
@@ -349,8 +350,9 @@ func GetMusicAudioData(ctx context.Context, musicParams *PlayMusicParams) ([]byt
 	log.Infof("获取音乐 %s 数据成功, 音频数据长度: %d", realMusicName, len(audioData))
 
 	return audioData, realMusicName, nil
-}*/
+}
 
+/*
 func GetMusicAudioData(ctx context.Context, musicParams *PlayMusicParams) ([]byte, string, error) {
 	musicName := musicParams.Name
 	//welcome := musicParams.Welcome
@@ -385,3 +387,4 @@ func GetMusicAudioData(ctx context.Context, musicParams *PlayMusicParams) ([]byt
 	return audioData, m.Name, nil
 
 }
+*/

@@ -22,6 +22,7 @@ type DoubaoV2ASR struct {
 	result      string
 	err         error
 	sendDataCnt int
+	c           *client.AsrWsClient
 }
 
 // NewDoubaoV2ASR 创建一个新的豆包ASR实例
@@ -66,26 +67,26 @@ func NewDoubaoV2ASR(config DoubaoV2Config) (*DoubaoV2ASR, error) {
 // StreamingRecognize 实现流式识别接口
 func (d *DoubaoV2ASR) StreamingRecognize(ctx context.Context, audioStream <-chan []float32) (chan types.StreamingResult, error) {
 	// 建立连接
-	c := client.NewAsrWsClient(d.config.WsURL, d.config.AppID, d.config.AccessToken)
+	d.c = client.NewAsrWsClient(d.config.WsURL, d.config.AppID, d.config.AccessToken)
 
 	// 豆包返回的识别结果
 	doubaoResultChan := make(chan *response.AsrResponse, 10)
 	//程序内部的结果通道
 	resultChan := make(chan types.StreamingResult, 10)
 
-	err := c.CreateConnection(ctx)
+	err := d.c.CreateConnection(ctx)
 	if err != nil {
 		log.Errorf("doubao asr failed to create connection: %v", err)
 		return nil, fmt.Errorf("create connection err: %w", err)
 	}
-	err = c.SendFullClientRequest()
+	err = d.c.SendFullClientRequest()
 	if err != nil {
 		log.Errorf("doubao asr failed to send full request: %v", err)
 		return nil, fmt.Errorf("send full request err: %w", err)
 	}
 
 	go func() {
-		err = c.StartAudioStream(ctx, audioStream, doubaoResultChan)
+		err = d.c.StartAudioStream(ctx, audioStream, doubaoResultChan)
 	}()
 
 	// 启动音频发送goroutine
@@ -101,6 +102,7 @@ func (d *DoubaoV2ASR) StreamingRecognize(ctx context.Context, audioStream <-chan
 func (d *DoubaoV2ASR) receiveStreamResults(ctx context.Context, resultChan chan types.StreamingResult, asrResponseChan chan *response.AsrResponse) {
 	defer func() {
 		close(resultChan)
+		d.c.Close()
 	}()
 	for {
 		select {
@@ -110,6 +112,14 @@ func (d *DoubaoV2ASR) receiveStreamResults(ctx context.Context, resultChan chan 
 		case result, ok := <-asrResponseChan:
 			if !ok {
 				log.Debugf("receiveStreamResults asrResponseChan 已关闭")
+				return
+			}
+			if result.Code != 0 {
+				resultChan <- types.StreamingResult{
+					Text:    "",
+					IsFinal: true,
+					Error:   fmt.Errorf("asr response code: %d", result.Code),
+				}
 				return
 			}
 			if result.IsLastPackage {

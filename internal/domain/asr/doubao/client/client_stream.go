@@ -150,3 +150,12 @@ func (c *AsrWsClient) Excute(ctx context.Context, audioStream chan []float32, re
 	}
 	return nil
 }
+
+func (c *AsrWsClient) Close() error {
+	if c.connect != nil {
+		err := c.connect.Close()
+		c.connect = nil
+		return err
+	}
+	return nil
+}

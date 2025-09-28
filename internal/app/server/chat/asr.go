@@ -80,24 +80,28 @@ func (a *ASRManager) ProcessVadAudio(ctx context.Context, onClose func()) {
 				var vadPcmData []float32
 				pcmData := pcmFrame[:n]
 				if !skipVad {
-					//如果已经检测到语音, 则不进行vad检测, 直接将pcmData传给asr
-					if state.VadProvider == nil {
-						// 初始化vad
-						err = state.Vad.Init(state.DeviceConfig.Vad.Provider, state.DeviceConfig.Vad.Config)
-						if err != nil {
-							log.Errorf("初始化vad失败: %v", err)
-							continue
-						}
-					}
 					//decode opus to pcm
 					state.AsrAudioBuffer.AddAsrAudioData(pcmData)
 
 					if state.AsrAudioBuffer.GetAsrDataSize() >= vadNeedGetCount*state.AsrAudioBuffer.PcmFrameSize {
 						//如果要进行vad, 至少要取60ms的音频数据
 						vadPcmData = state.AsrAudioBuffer.GetAsrData(vadNeedGetCount)
-						state.VadProvider.Reset()
-						haveVoice, err = state.VadProvider.IsVADExt(vadPcmData, audioFormat.SampleRate, frameSize)
 
+						//如果已经检测到语音, 则不进行vad检测, 直接将pcmData传给asr
+						if state.Vad.VadProvider == nil {
+							// 初始化vad
+							err = state.Vad.Init(state.DeviceConfig.Vad.Provider, state.DeviceConfig.Vad.Config)
+							if err != nil {
+								log.Errorf("初始化vad失败: %v", err)
+								continue
+							}
+						}
+						err = state.Vad.ResetVad()
+						if err != nil {
+							log.Errorf("重置vad失败: %v", err)
+							continue
+						}
+						haveVoice, err = state.Vad.IsVADExt(vadPcmData, audioFormat.SampleRate, frameSize)
 						if err != nil {
 							log.Errorf("processAsrAudio VAD检测失败: %v", err)
 							//删除
